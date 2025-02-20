@@ -35,3 +35,18 @@ suspend fun saveHeartRateData(
         throw e
     }
 }
+
+suspend fun loadHeartRateData(
+    healthConnectClient: HealthConnectClient
+): List<HeartRateRecord> {
+    return try {
+        val request = ReadRecordsRequest(
+            recordType = HeartRateRecord::class,
+            timeRangeFilter = TimeRangeFilter.before(Instant.now())
+        )
+
+        healthConnectClient.readRecords(request).records
+    } catch (e: Exception) {
+        emptyList()
+    }
+}

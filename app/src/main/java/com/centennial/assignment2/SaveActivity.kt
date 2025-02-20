@@ -1,7 +1,6 @@
 package com.centennial.assignment2
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -10,6 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.HeartRateRecord
+import java.time.Instant
 import kotlinx.coroutines.launch
 
 class SaveActivity : ComponentActivity() {
@@ -19,14 +20,9 @@ class SaveActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         healthConnectClient = HealthConnectClient.getOrCreate(this)
 
-        val heartRate = intent.getStringExtra("heartRate") ?: ""
-        val dateTime = intent.getStringExtra("dateTime") ?: ""
-
         setContent {
             SaveScreen(
                 healthConnectClient = healthConnectClient,
-                initialHeartRate = heartRate,
-                initialDateTime = dateTime,
                 onBackClick = { finish() }
             )
         }
@@ -36,15 +32,12 @@ class SaveActivity : ComponentActivity() {
 @Composable
 fun SaveScreen(
     healthConnectClient: HealthConnectClient,
-    initialHeartRate: String,
-    initialDateTime: String,
     onBackClick: () -> Unit
 ) {
-    var heartRate by remember { mutableStateOf(initialHeartRate) }
-    var dateTime by remember { mutableStateOf(initialDateTime) }
+    var heartRate by remember { mutableStateOf("") }
+    var dateTime by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     var showSaveSuccess by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -76,14 +69,6 @@ fun SaveScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        errorMessage?.let {
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -95,21 +80,12 @@ fun SaveScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        try {
-                            saveHeartRateData(
-                                healthConnectClient,
-                                heartRate.toIntOrNull() ?: 0,
-                                dateTime
-                            )
-                            showSaveSuccess = true
-                            errorMessage = null
-                            // Clear input fields after successful save
-                            heartRate = ""
-                            dateTime = ""
-                        } catch (e: Exception) {
-                            Log.e("SaveScreen", "Error saving heart rate data", e)
-                            errorMessage = "Failed to save: ${e.message}"
-                        }
+                        saveHeartRateData(
+                            healthConnectClient,
+                            heartRate.toIntOrNull() ?: 0,
+                            dateTime
+                        )
+                        showSaveSuccess = true
                     }
                 }
             ) {
